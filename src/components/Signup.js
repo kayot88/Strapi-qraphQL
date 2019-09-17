@@ -22,7 +22,7 @@ class Signup extends Component {
 
   handleSubmit = async e => {
     e.preventDefault();
-    console.log(this.state);
+    // console.log(this.state);
     const { password, email, username } = this.state;
     if (this.checkIsEmpty(this.state)) {
       this.showToast('Fill all of the field');
@@ -32,7 +32,6 @@ class Signup extends Component {
       const response = await strapi.register(password, email, username);
       this.setState({ loading: false });
       setToken(response.jwt)
-      console.log(response);
       this.redirectUser('/')
     } catch (error) {
       console.error(error);
