@@ -1,5 +1,6 @@
 const CART_KEY = 'cart';
 const TOKEN_KEY = 'jwt';
+
 export const calcPrice = items => {
   return items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 };

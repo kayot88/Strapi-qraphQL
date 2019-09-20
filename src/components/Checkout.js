@@ -1,5 +1,14 @@
 import React, { Component, Fragment } from 'react';
-import { Container, Box, Text, Button, Heading, TextField } from 'gestalt';
+import {
+  Container,
+  Box,
+  Text,
+  Button,
+  Heading,
+  TextField,
+  Modal,
+  Spinner
+} from 'gestalt';
 import Form from 'react-validation/build/form';
 import Input from 'react-validation/build/input';
 import { required, email, password, lt } from '../utils/validation';
@@ -16,7 +25,9 @@ class Checkout extends Component {
     address: '',
     postalCode: null,
     city: '',
-    confirmEmail: ''
+    confirmEmail: '',
+    orderLoading: true,
+    modal: false
   };
 
   componentDidMount() {
@@ -26,25 +37,23 @@ class Checkout extends Component {
   handleConfirm = e => {
     e.preventDefault();
     if (this.checkIsEmpty(this.state)) {
-      console.log(this.loading);
+      // console.log(this.loading);
       return this.showToast('Fill all of the field');
     }
     try {
-      this.setState({ loading: true, showToast: true });
+      this.setState({ loading: true, showToast: true, modal: true });
     } catch (error) {
       console.error(error);
-      this.setState({ loading: false });
+      this.setState({ loading: false, modal: false });
       this.showToast(error.message);
     }
   };
 
-  showToast = toastText => {
-    if (toastText) {
-      this.setState({ showToast: true, toastMessage: toastText });
-      setTimeout(() => {
-        this.setState({ showToast: false, toastMessage: '' });
-      }, 3000);
-    }
+  showToast = (toastText = 'loading') => {
+    this.setState({ showToast: true, toastMessage: toastText });
+    setTimeout(() => {
+      this.setState({ showToast: false, toastMessage: '' });
+    }, 3000);
   };
 
   checkIsEmpty = ({ address, postalCode, city, confirmEmail }) => {
@@ -57,9 +66,22 @@ class Checkout extends Component {
     });
     // console.log(this.state);
   };
-
+  handleSubmitOrder = params => {
+    // this.setState({orderLoading: true})
+    console.log(this.state.orderLoading);
+  };
+  closeModal = () => {
+    this.setState({ modal: false, loading: false });
+  };
   render() {
-    const { loading, showToast, toastMessage, cartItem } = this.state;
+    const {
+      loading,
+      showToast,
+      toastMessage,
+      cartItem,
+      modal,
+      orderLoading
+    } = this.state;
     return (
       <Container>
         <Box
@@ -80,13 +102,13 @@ class Checkout extends Component {
           <Box
             display="flex"
             justifyContent="center"
-            alignItems="left"
+            // alignItems="left"
             direction="column"
             marginBottom={6}
           >
             <Text>{cartItem.length} item for checkout</Text>
             {cartItem.map(item => (
-              <Box key={item._id}>
+              <Box key={item.id}>
                 <Text>
                   {item.name} {item.quantity} x ${item.price} = $
                   {item.quantity * item.price}
@@ -138,14 +160,13 @@ class Checkout extends Component {
                   placeholder="Address"
                   onChange={this.handleChange}
                 />
-                <button
+                <Button
                   // inline
                   disabled={loading}
                   color="blue"
                   type="submit"
-                >
-                  Submit
-                </button>
+                  text="Submit"
+                ></Button>
               </Form>
             </Fragment>
           ) : (
@@ -156,11 +177,82 @@ class Checkout extends Component {
           )}
         </Box>
         <ToastMessage show={showToast} message={toastMessage} />
+        {modal && (
+          <ConfirmationComp
+            orderLoading={orderLoading}
+            cartItem={cartItem}
+            closeModal={this.closeModal}
+            handleSubmitOrder={this.handleSubmitOrder}
+          />
+        )}
+        {/* <Modal show={modal}></Modal> */}
       </Container>
     );
   }
 }
-
+const ConfirmationComp = ({
+  orderLoading,
+  cartItem,
+  loading,
+  closeModal,
+  handleSubmitOrder
+}) => (
+  <Modal
+    accessibilityCloseLabel="close"
+    accessibilityModalLabel="Confirm your order"
+    heading="Confirm your order"
+    onDismiss={closeModal}
+    footer={
+      <Box
+        display="flex"
+        justifyContent="center"
+        marginRight={-1}
+        marginLeft={-1}
+      >
+        <Box padding={1}>
+          <Button
+            size="lg"
+            color="red"
+            text="Submit"
+            disable={orderLoading}
+            onClick={handleSubmitOrder}
+          ></Button>
+        </Box>
+        <Box padding={1}>
+          <Button
+            size="lg"
+            color="red"
+            text="Cancel"
+            disable={orderLoading}
+            onClick={closeModal}
+          >
+          </Button>
+        </Box>
+      </Box>
+    }
+    role="alertdialog"
+    // size="sm"
+  >
+    {!orderLoading && (
+      <Box
+        color="lightWash"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        direction="column"
+      >
+        {cartItem.map(item => (
+          <Box key={item.id}>
+            {item.name} {item.quantity} * {item.price} = $
+            {item.quantity * item.price}
+          </Box>
+        ))}
+        <b>Total: ${calcPrice(cartItem)}</b>
+      </Box>
+    )}
+    <Spinner show={orderLoading} accessibilityLabel='for '/>
+  </Modal>
+);
 // Checkout.propTypes = {};
 
 export default Checkout;
