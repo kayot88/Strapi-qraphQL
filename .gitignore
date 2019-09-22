@@ -82,6 +82,10 @@ ssl
 nbproject
 public/uploads/*
 !public/uploads/.gitkeep
+.env
+.env.development.local
+.env.test.local
+.env.production.local
 
 ############################
 # Node.js

@@ -5,6 +5,11 @@ export const calcPrice = items => {
   return items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 };
 
+export const calcAmount = items => {
+  return Number(items.reduce((acc, item) => acc + item.price * item.quantity, 0));
+};
+
+
 export const setItem = (value, cartKey = CART_KEY) => {
   if (localStorage) {
     return localStorage.setItem(cartKey, JSON.stringify(value));

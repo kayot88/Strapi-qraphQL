@@ -9,14 +9,24 @@ import {
   Modal,
   Spinner
 } from 'gestalt';
+import {
+  Elements,
+  StripeProvider,
+  CardElement,
+  injectStripe
+} from 'react-stripe-elements';
+import Strapi from 'strapi-sdk-javascript/build/main';
 import Form from 'react-validation/build/form';
 import Input from 'react-validation/build/input';
+import { withRouter } from 'react-router-dom';
 import { required, email, password, lt } from '../utils/validation';
 import ToastMessage from './ToastMessage';
-import { calcPrice, getItem } from '../utils';
-import PropTypes from 'prop-types';
+import { calcPrice, getItem, calcAmount, clearCard } from '../utils';
 
-class Checkout extends Component {
+const apiUrl = process.env.API_URL || 'http://localhost:1337';
+const strapi = new Strapi(apiUrl);
+
+class _CheckoutForm extends Component {
   state = {
     cartItem: [],
     showToast: false,
@@ -26,7 +36,7 @@ class Checkout extends Component {
     postalCode: null,
     city: '',
     confirmEmail: '',
-    orderLoading: true,
+    orderLoading: false,
     modal: false
   };
 
@@ -49,10 +59,12 @@ class Checkout extends Component {
     }
   };
 
-  showToast = (toastText = 'loading') => {
+  showToast = (toastText = 'loading', redirect = false) => {
     this.setState({ showToast: true, toastMessage: toastText });
     setTimeout(() => {
-      this.setState({ showToast: false, toastMessage: '' });
+      this.setState({ showToast: false, toastMessage: '' }, () => {
+        return redirect && this.props.history.push('/');
+      });
     }, 3000);
   };
 
@@ -66,9 +78,34 @@ class Checkout extends Component {
     });
     // console.log(this.state);
   };
-  handleSubmitOrder = params => {
-    // this.setState({orderLoading: true})
-    console.log(this.state.orderLoading);
+  handleSubmitOrder = async () => {
+    const { address, city, postalCode, cartItem } = this.state;
+    const amount = calcAmount(cartItem);
+    this.setState({ orderLoading: true });
+    let token;
+    try {
+      //token
+      const response = await this.props.stripe.createToken();
+      token = response.token.id;
+      //create order
+      await strapi.createEntry('orders', {
+        amount,
+        postalCode,
+        address,
+        brew: cartItem,
+        token,
+        city
+      });
+      //clearbrews in cart items
+      this.setState({ orderLoading: false, modal: false });
+      this.showToast('You successefully add to order', true);
+      clearCard();
+      //success msg
+    } catch (error) {
+      this.setState({ orderLoading: false, modal: false });
+      this.showToast(`Error is ${error.message}`);
+      //error msg
+    }
   };
   closeModal = () => {
     this.setState({ modal: false, loading: false });
@@ -145,7 +182,7 @@ class Checkout extends Component {
                 />
                 <Input
                   id="postalCode"
-                  type="number"
+                  type="text"
                   name="postalCode"
                   placeholder="Postal Code"
                   onChange={this.handleChange}
@@ -159,6 +196,10 @@ class Checkout extends Component {
                   name="address"
                   placeholder="Address"
                   onChange={this.handleChange}
+                />
+                <CardElement
+                  id="stripe__input"
+                  onReady={input => input.focus()}
                 />
                 <Button
                   // inline
@@ -225,8 +266,7 @@ const ConfirmationComp = ({
             text="Cancel"
             disable={orderLoading}
             onClick={closeModal}
-          >
-          </Button>
+          ></Button>
         </Box>
       </Box>
     }
@@ -250,9 +290,17 @@ const ConfirmationComp = ({
         <b>Total: ${calcPrice(cartItem)}</b>
       </Box>
     )}
-    <Spinner show={orderLoading} accessibilityLabel='for '/>
+    <Spinner show={orderLoading} accessibilityLabel="for " />
   </Modal>
 );
 // Checkout.propTypes = {};
+const CheckoutForm = withRouter(injectStripe(_CheckoutForm));
+const Checkout = () => (
+  <StripeProvider apiKey='process.env.STRIPE_PUBLISH_KEY'>
+    <Elements>
+      <CheckoutForm />
+    </Elements>
+  </StripeProvider>
+);
 
 export default Checkout;

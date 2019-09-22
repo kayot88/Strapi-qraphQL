@@ -22,6 +22,7 @@ const strapi = new Strapi(apiUrl);
 class App extends Component {
   state = { brands: [], searchText: '', loadingBrands: true };
   async componentDidMount() {
+    console.log(process.env.STRAPI_PUBLISH_KEY);
     try {
       const response = await strapi.request('POST', '/graphql', {
         data: {
@@ -163,7 +164,7 @@ class App extends Component {
             show={loadingBrands}
             accessibilityLabel="Loading spinner"
           ></Spinner> */}
-          {loadingBrands && <Loader/>}
+          {loadingBrands && <Loader />}
         </Container>
       </Fragment>
     );
