@@ -1,0 +1,18 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: eslint-plugin-react
+    versions:
+    - 7.22.0
+    - 7.23.0
+  - dependency-name: urijs
+    versions:
+    - 1.19.5
+  - dependency-name: html-webpack-plugin
+    versions:
+    - 3.2.0
